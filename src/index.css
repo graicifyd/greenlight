@@ -1,0 +1,111 @@
+@import 'tailwindcss';
+
+@theme {
+  --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Fraunces', 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+
+  --color-cream: #f6f3ed;
+  --color-paper: #fffdf9;
+  --color-ink: #1b1a18;
+  --color-ink-2: #4a4743;
+  --color-muted: #7a766f;
+  --color-line: #e7e1d6;
+
+  --color-go: #2e8b57;
+  --color-go-deep: #1f6b42;
+  --color-go-soft: #dcefe2;
+  --color-go-tint: #eef7f1;
+
+  --color-stop: #d64f45;
+  --color-stop-deep: #a93a32;
+  --color-stop-soft: #fadfdc;
+  --color-stop-tint: #fcefed;
+
+  --color-period: #b8324f;
+  --color-amber: #d99a2b;
+  --color-amber-soft: #fbeed3;
+
+  --shadow-card: 0 1px 2px rgba(27, 26, 24, 0.04), 0 8px 24px -12px rgba(27, 26, 24, 0.18);
+  --shadow-float: 0 12px 40px -12px rgba(27, 26, 24, 0.35);
+
+  --radius-xl2: 1.375rem;
+}
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+    font-feature-settings: 'cv11', 'ss01';
+  }
+  body {
+    @apply bg-cream text-ink font-sans antialiased;
+    background-image: radial-gradient(1200px 600px at 50% -200px, #fff8ec 0%, transparent 60%);
+  }
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+  button {
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  input[type='number']::-webkit-inner-spin-button,
+  input[type='number']::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type='number'] {
+    -moz-appearance: textfield;
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-paper rounded-xl2 shadow-card border border-line/70;
+  }
+  .display {
+    @apply font-display tracking-tight;
+    font-variation-settings: 'opsz' 60, 'SOFT' 30;
+  }
+  .predicted-stripes {
+    background-image: repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.55) 0 3px, transparent 3px 7px);
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.45s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
+@keyframes sheet-in {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.sheet-in {
+  animation: sheet-in 0.3s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+}
