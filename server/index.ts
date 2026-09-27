@@ -58,6 +58,43 @@ interface LogRow {
 const DEFAULT_SETTINGS = { tempUnit: 'c', caution: 'standard', trackMucus: true, typicalCycleLength: 28 }
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
+const FLOWS = new Set(['spotting', 'light', 'medium', 'heavy'])
+const MUCUS_TYPES = new Set(['dry', 'sticky', 'creamy', 'watery', 'eggwhite'])
+const LH_RESULTS = new Set(['negative', 'positive'])
+const SEX_ENTRIES = new Set(['protected', 'unprotected'])
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
+
+/** Returns a sanitised copy of a client log, or null when the date is invalid. Unknown/invalid fields are dropped. */
+function sanitiseLog(input: unknown): Record<string, unknown> | null {
+  if (typeof input !== 'object' || input == null) return null
+  const src = input as Record<string, unknown>
+  if (!DATE_RE.test(String(src.date))) return null
+  const out: Record<string, unknown> = { date: String(src.date) }
+  if (src.flow != null && FLOWS.has(String(src.flow))) out.flow = src.flow
+  if (typeof src.temp === 'number' && Number.isFinite(src.temp) && src.temp >= 30 && src.temp <= 45) {
+    out.temp = src.temp
+    if (src.tempDisturbed === true) out.tempDisturbed = true
+  }
+  if (src.mucus != null && MUCUS_TYPES.has(String(src.mucus))) out.mucus = src.mucus
+  if (src.lh != null && LH_RESULTS.has(String(src.lh))) out.lh = src.lh
+  if (src.sex != null && SEX_ENTRIES.has(String(src.sex))) out.sex = src.sex
+  if (typeof src.note === 'string' && src.note.trim()) out.note = src.note.slice(0, 2000)
+  return out
+}
+
+function sanitiseSettings(input: unknown): Record<string, unknown> {
+  if (typeof input !== 'object' || input == null) return {}
+  const src = input as Record<string, unknown>
+  const out: Record<string, unknown> = {}
+  if (src.tempUnit === 'c' || src.tempUnit === 'f') out.tempUnit = src.tempUnit
+  if (src.caution === 'standard' || src.caution === 'strict') out.caution = src.caution
+  if (typeof src.trackMucus === 'boolean') out.trackMucus = src.trackMucus
+  if (Number.isInteger(src.typicalCycleLength) && (src.typicalCycleLength as number) >= 20 && (src.typicalCycleLength as number) <= 45) {
+    out.typicalCycleLength = src.typicalCycleLength
+  }
+  return out
+}
+
 function inviteCode(): string {
   for (;;) {
     const bytes = randomBytes(6)
@@ -105,7 +142,15 @@ function auth(req: Request, res: Response, next: NextFunction) {
 const getAuth = (req: Request): Auth => (req as Request & { auth: Auth }).auth
 
 const app = express()
-app.use(cors())
+const ALLOWED_ORIGINS = new Set(
+  (process.env.GREENLIGHT_ORIGINS ?? 'http://localhost:5173,http://127.0.0.1:5173').split(',').map((o) => o.trim()),
+)
+app.use(
+  cors({
+    // No Origin header = same-origin/curl/native client; browsers cross-origin must be the dev server or a configured origin.
+    origin: (origin, cb) => cb(null, origin == null || ALLOWED_ORIGINS.has(origin)),
+  }),
+)
 app.use(express.json({ limit: '2mb' }))
 
 const api = express.Router()
@@ -175,18 +220,20 @@ api.get('/state', (req, res) => {
 
 api.put('/logs', (req, res) => {
   const { coupleId, memberId } = getAuth(req)
-  const log = req.body
-  if (!log || !/^\d{4}-\d{2}-\d{2}$/.test(String(log.date))) {
+  const log = sanitiseLog(req.body)
+  if (!log) {
     res.status(400).json({ error: 'A log needs a YYYY-MM-DD date' })
     return
   }
-  const updatedAt = Number(log.updatedAt) || Date.now()
+  // The server clock decides write order so a fast device clock cannot outrank a partner's edits.
+  const updatedAt = Date.now()
+  log.updatedAt = updatedAt
   const existing = db.prepare('SELECT updated_at FROM logs WHERE couple_id = ? AND date = ?').get(coupleId, log.date) as { updated_at: number } | undefined
-  if (!existing || existing.updated_at <= updatedAt) {
+  if (!existing || existing.updated_at < updatedAt) {
     db.prepare('INSERT OR REPLACE INTO logs (couple_id, date, data, updated_at) VALUES (?, ?, ?, ?)').run(
       coupleId,
       log.date,
-      JSON.stringify({ ...log, updatedAt }),
+      JSON.stringify(log),
       updatedAt,
     )
     bump(coupleId)
@@ -202,10 +249,12 @@ api.post('/logs/bulk', (req, res) => {
   db.exec('BEGIN')
   try {
     if (replace) db.prepare('DELETE FROM logs WHERE couple_id = ?').run(coupleId)
-    for (const l of logs as { date: string; updatedAt?: number }[]) {
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(l.date))) continue
-      const updatedAt = Number(l.updatedAt) || Date.now()
-      insert.run(coupleId, l.date, JSON.stringify({ ...l, updatedAt }), updatedAt)
+    for (const raw of logs) {
+      const l = sanitiseLog(raw)
+      if (!l) continue
+      const updatedAt = Date.now()
+      l.updatedAt = updatedAt
+      insert.run(coupleId, l.date, JSON.stringify(l), updatedAt)
     }
     bump(coupleId)
     db.exec('COMMIT')
@@ -226,7 +275,7 @@ api.delete('/logs/:date', (req, res) => {
 api.put('/settings', (req, res) => {
   const { coupleId, memberId } = getAuth(req)
   const current = JSON.parse((db.prepare('SELECT settings FROM couples WHERE id = ?').get(coupleId) as { settings: string }).settings)
-  db.prepare('UPDATE couples SET settings = ? WHERE id = ?').run(JSON.stringify({ ...current, ...(req.body ?? {}) }), coupleId)
+  db.prepare('UPDATE couples SET settings = ? WHERE id = ?').run(JSON.stringify({ ...current, ...sanitiseSettings(req.body) }), coupleId)
   bump(coupleId)
   res.json(stateFor(coupleId, memberId))
 })

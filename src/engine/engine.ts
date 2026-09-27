@@ -344,6 +344,19 @@ function analyseCycle(cycle: Cycle, previous: Cycle[], settings: Settings, today
       rule += ` Extended for the positive LH test on day ${lhFrom - 4}.`
     }
   }
+  if (from != null && settings.trackMucus && cycle.mucusPeak) {
+    let lastFertileMucus = -1
+    mucus.forEach((muc, i) => {
+      if (muc && PEAK_MUCUS.has(muc)) lastFertileMucus = i + 1
+    })
+    if (lastFertileMucus > cycle.mucusPeak.peakDay) {
+      const mucusFrom = lastFertileMucus + 4
+      if (mucusFrom > from) {
+        from = mucusFrom
+        rule += ` New fertile mucus on day ${lastFertileMucus} needs three more drier days.`
+      }
+    }
+  }
   cycle.postOvGreenFrom = from
   cycle.postOvRule = rule
   cycle.ovulationDay = cycle.tempShift ? cycle.tempShift.firstHighDay - 1 : null
@@ -373,6 +386,11 @@ function assessKnownDay(cycle: Cycle, cycleDay: number, date: string): DayAssess
   const log = cycle.logs.get(cycleDay)
   const isPeriod = isPeriodFlow(log)
   const base = { date, cycleDay, cycleIndex: cycle.index, kind: 'confirmed' as Kind, isPeriod, log, greenFromEvening: false }
+  const lhRed = cycle.lhPositiveDays.some((d) => cycleDay >= d && cycleDay <= d + 3)
+  if (lhRed) {
+    const lhDay = Math.max(...cycle.lhPositiveDays.filter((d) => cycleDay >= d && cycleDay <= d + 3))
+    return { ...base, light: 'red', phase: isPeriod ? 'menstrual' : 'fertile', reason: `Positive LH test on day ${lhDay} — red for three days.` }
+  }
   if (cycleDay <= cycle.preOvGreenUntil) {
     return { ...base, light: 'green', phase: isPeriod ? 'menstrual' : 'follicular', reason: cycle.preOvRule }
   }
@@ -393,6 +411,7 @@ interface Projection {
   firstHighDay: number
   greenFrom: number
   preOvUntil: number
+  lhPositiveDays: number[]
 }
 
 function projectCycle(cycle: Cycle | null, stats: Stats, settings: Settings, todayCycleDay: number | null): Projection {
@@ -408,12 +427,16 @@ function projectCycle(cycle: Cycle | null, stats: Stats, settings: Settings, tod
 
   let length = Math.max(typicalLength, firstHighDay - 1 + luteal, greenFrom + 2)
   if (todayCycleDay != null && todayCycleDay >= length) length = todayCycleDay + 1
-  return { length, firstHighDay, greenFrom, preOvUntil: cycle?.preOvGreenUntil ?? 0 }
+  return { length, firstHighDay, greenFrom, preOvUntil: cycle?.preOvGreenUntil ?? 0, lhPositiveDays: cycle?.lhPositiveDays ?? [] }
 }
 
 function assessPredictedDay(date: string, cycleDay: number, cycleIndex: number | null, proj: Projection, settings: Settings): DayAssessment {
   const isNextCycle = cycleIndex == null
   const base = { date, cycleDay, cycleIndex, kind: 'predicted' as Kind, isPeriod: isNextCycle && cycleDay <= 5, greenFromEvening: false }
+  const lhRed = proj.lhPositiveDays.some((d) => cycleDay >= d && cycleDay <= d + 3)
+  if (lhRed) {
+    return { ...base, light: 'red', phase: base.isPeriod ? 'menstrual' : 'fertile', reason: 'Positive LH test — red for three days.' }
+  }
   if (cycleDay <= proj.preOvUntil) {
     return {
       ...base,

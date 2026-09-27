@@ -21,7 +21,7 @@ export function ChartScreen() {
   if (cycles.length === 0) {
     return <Card className="mt-2 text-[14px] text-muted">The chart appears once a period has been logged.</Card>
   }
-  const cycle = cycles[idx ?? cycles.length - 1]
+  const cycle = cycles[Math.min(idx ?? cycles.length - 1, cycles.length - 1)]
   const unit = state.settings.tempUnit
 
   return (

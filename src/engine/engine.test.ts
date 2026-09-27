@@ -119,6 +119,35 @@ describe('analyse — conservative behaviour', () => {
     expect(a.current!.postOvGreenFrom).toBe(21)
   })
 
+  it('a positive LH test during early green days turns those days red', () => {
+    const today = '2026-09-20'
+    const logs = buildDemoLogs(today, 11)
+    const c = analyse(logs, DEFAULT_SETTINGS, today).current!
+    expect(c.preOvGreenUntil).toBe(5)
+    const lhDay = 1
+    logs.push({ date: addDays(c.start, lhDay - 1), updatedAt: 0, lh: 'positive' })
+    const a = analyse(logs, DEFAULT_SETTINGS, today)
+    for (let d = lhDay; d <= lhDay + 3; d++) {
+      expect(a.days.get(addDays(c.start, d - 1))!.light, `day ${d}`).toBe('red')
+    }
+    expect(a.days.get(addDays(c.start, lhDay + 3))!.light).toBe('green') // day 5: back inside the early window
+  })
+
+  it('fertile mucus after temp confirmation delays luteal green by three drier days', () => {
+    const logs: DayLog[] = [mk(0, { flow: 'medium' })]
+    for (let d = 1; d <= 25; d++) {
+      const temp = d <= 14 ? 36.3 + (d % 3) * 0.05 : 36.65
+      const mucus: Mucus = d >= 11 && d <= 13 ? 'eggwhite' : d === 20 ? 'watery' : 'dry'
+      logs.push(mk(d - 1, { temp, mucus }))
+    }
+    const a = analyse(logs, DEFAULT_SETTINGS, addDays(START, 24))
+    const c = a.current!
+    expect(c.tempShift).toMatchObject({ confirmedDay: 17 })
+    expect(c.postOvGreenFrom).toBe(24) // watery day 20 + 3 drier days + evening rule
+    expect(a.days.get(addDays(START, 18))!.light).toBe('red')
+    expect(a.days.get(addDays(START, 23))!.light).toBe('green')
+  })
+
   it('demo history: early-cycle green days appear once the previous cycle confirmed ovulation, and stop at the first mucus', () => {
     const today = '2026-09-20'
     const a = analyse(buildDemoLogs(today, 11), DEFAULT_SETTINGS, today)

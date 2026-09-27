@@ -59,7 +59,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     async (fn: () => Promise<RemoteState | undefined>) => {
       try {
         const next = await fn()
-        if (next) commit(next)
+        // Guard against out-of-order responses: never let an older snapshot replace newer state.
+        if (next && (stateRef.current == null || next.version >= stateRef.current.version)) commit(next)
         setOffline(false)
         setError(null)
       } catch (e) {
@@ -137,30 +138,45 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       saveLog: async (partial) => {
         const log: DayLog = { ...partial, updatedAt: Date.now() }
         const isEmpty = !log.flow && log.temp == null && !log.mucus && !log.lh && !log.sex && !log.note?.trim()
-        if (isEmpty) {
-          const cur = stateRef.current
-          if (cur) commit({ ...cur, logs: cur.logs.filter((l) => l.date !== log.date) })
-          await run(() => api.deleteLog(log.date))
-          return
+        try {
+          if (isEmpty) {
+            const cur = stateRef.current
+            if (cur) commit({ ...cur, logs: cur.logs.filter((l) => l.date !== log.date) })
+            await run(() => api.deleteLog(log.date))
+            return
+          }
+          optimistic(log)
+          await run(() => api.upsertLog(log))
+        } catch (e) {
+          await refresh() // roll the optimistic change back to what the server actually has
+          throw e
         }
-        optimistic(log)
-        await run(() => api.upsertLog(log))
       },
       deleteLog: async (date) => {
         const cur = stateRef.current
         if (cur) commit({ ...cur, logs: cur.logs.filter((l) => l.date !== date) })
-        await run(() => api.deleteLog(date))
+        try {
+          await run(() => api.deleteLog(date))
+        } catch (e) {
+          await refresh()
+          throw e
+        }
       },
       updateSettings: async (patch) => {
         const cur = stateRef.current
         if (cur) commit({ ...cur, settings: { ...cur.settings, ...patch } })
-        await run(() => api.updateSettings(patch))
+        try {
+          await run(() => api.updateSettings(patch))
+        } catch (e) {
+          await refresh()
+          throw e
+        }
       },
       rename: (name) => run(() => api.rename(name)),
       loadDemo: () => run(() => api.bulkLogs(buildDemoLogs(today, 11), true)),
       clearLogs: () => run(() => api.bulkLogs([], true)),
       leave: async () => {
-        await api.leave().catch(() => undefined)
+        await api.leave() // only drop the local token once the server confirms the leave
         setToken(null)
         commit(null)
       },
