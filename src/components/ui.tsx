@@ -37,9 +37,9 @@ export function Button({
   type?: 'button' | 'submit'
 }) {
   const styles = {
-    primary: 'bg-ink text-cream hover:bg-ink-2 disabled:bg-ink/40',
-    secondary: 'bg-paper border border-line text-ink hover:bg-cream',
-    ghost: 'bg-transparent text-ink-2 hover:bg-ink/5',
+    primary: 'bg-gradient-to-br from-go to-go-deep text-white shadow-card hover:brightness-105 disabled:opacity-40',
+    secondary: 'bg-paper border border-line text-go-deep hover:bg-go-tint',
+    ghost: 'bg-transparent text-ink-2 hover:bg-go-tint',
     danger: 'bg-stop-tint text-stop-deep border border-stop-soft hover:bg-stop-soft',
   }[variant]
   return (
@@ -76,11 +76,11 @@ export function Segmented<T extends string>({
             onClick={() => onChange(active ? undefined : o.value)}
             className={cx(
               'rounded-2xl border px-2 py-2.5 text-left transition active:scale-[0.98]',
-              active ? 'bg-ink text-cream border-ink shadow-card' : 'bg-paper border-line hover:bg-cream',
+              active ? 'bg-go text-white border-go shadow-card' : 'bg-paper border-line hover:bg-go-tint',
             )}
           >
             <div className={cx('text-[14px] font-semibold leading-tight', !active && 'text-ink')}>{o.label}</div>
-            {o.hint && <div className={cx('text-[11.5px] leading-tight mt-0.5', active ? 'text-cream/70' : 'text-muted')}>{o.hint}</div>}
+            {o.hint && <div className={cx('text-[11.5px] leading-tight mt-0.5', active ? 'text-white/80' : 'text-muted')}>{o.hint}</div>}
           </button>
         )
       })}
@@ -116,7 +116,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center" role="dialog" aria-modal="true">
-      <button aria-label="Close" className="absolute inset-0 bg-ink/40 backdrop-blur-[2px]" onClick={onClose} />
+      <button aria-label="Close" className="absolute inset-0 bg-ink/35 backdrop-blur-[2px]" onClick={onClose} />
       <div className="sheet-in relative w-full max-w-md max-h-[88dvh] overflow-y-auto rounded-t-[28px] bg-cream shadow-float px-5 pb-[max(20px,env(safe-area-inset-bottom))] pt-3">
         <div className="mx-auto mb-3 h-1.5 w-10 rounded-full bg-ink/15" />
         <div className="flex items-start justify-between gap-3 mb-3">
@@ -142,10 +142,10 @@ export function LightDot({ light, predicted, size = 10 }: { light: Light; predic
 
 export function Pill({ children, tone = 'neutral' }: { children: ReactNode; tone?: 'neutral' | 'green' | 'red' | 'amber' | 'inverse' }) {
   const styles = {
-    neutral: 'bg-ink/6 text-ink-2',
+    neutral: 'bg-go-tint text-ink-2',
     green: 'bg-go-soft text-go-deep',
     red: 'bg-stop-soft text-stop-deep',
-    amber: 'bg-amber-soft text-[#8a5d0c]',
+    amber: 'bg-amber-soft text-[#9a4a2e]',
     inverse: 'bg-white/20 text-white',
   }[tone]
   return <span className={cx('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[12px] font-semibold', styles)}>{children}</span>
@@ -161,4 +161,4 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
   )
 }
 
-export const inputClass = 'w-full h-12 rounded-2xl border border-line bg-paper px-4 text-[16px] placeholder:text-muted/70 focus:border-ink focus:outline-none'
+export const inputClass = 'w-full h-12 rounded-2xl border border-line bg-paper px-4 text-[16px] placeholder:text-muted/70 focus:border-go focus:outline-none'

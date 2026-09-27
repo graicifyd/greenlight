@@ -1,17 +1,16 @@
 # Greenlight
 
-A fertility-awareness tracker for couples, built to **avoid** pregnancy. Every day is either **green** (lower-risk) or **red** (use a condom or wait), and both partners see the same answer on their own phone.
+A pink, couples-friendly cycle tracker for enjoying intimacy without the pregnancy worry. Every day is either a **yes day** (relax and enjoy) or a **careful day** (use a condom or wait), and both partners see the same answer on their own phone. She logs just her period, optional LH tests and intimacy — no temperatures, no mucus checks.
 
-Greenlight is a fertility-awareness aid, not a contraceptive device or medical advice.
+Greenlight is not a contraceptive device or medical advice. The calendar method is less reliable than hormonal or barrier contraception.
 
 ## How days are decided
 
-Greenlight uses a conservative symptothermal ruleset (in the spirit of Sensiplan / the double-check method). A day is red unless logged data proves otherwise.
+Greenlight uses a conservative calendar method. A day is careful unless cycle history says otherwise.
 
-- **Temperature shift** — a coverline is drawn above the highest of the 6 normal readings before a rise. Three readings above it, the third at least 0.2 °C higher, confirm ovulation. Disturbed readings are skipped; one dip is tolerated; a failed rise is discarded.
-- **Mucus peak** — the last watery / egg-white day is peak; three drier days confirm it. With mucus tracking on, luteal green starts the evening of the *later* of the two confirmations. Temperature-only mode waits one extra day.
-- **Early-cycle green** — only when history allows: never past day 5, never past (earliest first high − 8), never past (shortest cycle − 20), and never once mucus appears. A first cycle, or a cycle after one without a confirmed rise, has no early green days. **Strict** mode removes early green days entirely.
-- **LH tests** — a positive test keeps the following three days red.
+- **Fertile window** — (shortest cycle − 20) through (longest cycle − 9). Without history the typical cycle length is used (28 days → days 8–19).
+- **Early yes days** — only once one full cycle is logged, never past day 5 and never inside the fertile window. **Extra safe** mode removes them.
+- **LH tests** — a positive test keeps that day and the following three careful.
 - **Predictions** are striped and clearly labelled; they are for planning only.
 
 The engine lives in `src/engine/engine.ts` and is covered by `src/engine/engine.test.ts`.

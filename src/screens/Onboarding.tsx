@@ -1,8 +1,7 @@
 import { ArrowLeft, Sparkles } from 'lucide-react'
 import { useState } from 'react'
-import { Button, Field, Segmented, Toggle, cx, inputClass } from '../components/ui'
+import { Button, Field, cx, inputClass } from '../components/ui'
 import { addDays } from '../engine/dates'
-import type { TempUnit } from '../engine/types'
 import { useStore } from '../lib/store'
 
 type Step = 'welcome' | 'start' | 'join'
@@ -17,8 +16,6 @@ export function Onboarding() {
   const [name, setName] = useState('')
   const [lastPeriod, setLastPeriod] = useState(addDays(today, -7))
   const [cycleLength, setCycleLength] = useState(28)
-  const [trackMucus, setTrackMucus] = useState(true)
-  const [unit, setUnit] = useState<TempUnit>('c')
   const [code, setCode] = useState(joinParam)
 
   const guard = async (fn: () => Promise<void>) => {
@@ -35,13 +32,13 @@ export function Onboarding() {
 
   const start = () =>
     guard(async () => {
-      await createCouple(name.trim() || 'Me', 'cycling', { typicalCycleLength: cycleLength, trackMucus, tempUnit: unit })
+      await createCouple(name.trim() || 'Me', 'cycling', { typicalCycleLength: cycleLength })
       if (lastPeriod) await saveLog({ date: lastPeriod, flow: 'medium' })
     })
 
   const demo = () =>
     guard(async () => {
-      await createCouple('Ada', 'cycling', { typicalCycleLength: 29, trackMucus: true, tempUnit: 'c' })
+      await createCouple('Ada', 'cycling', { typicalCycleLength: 29 })
       await loadDemo()
     })
 
@@ -56,21 +53,21 @@ export function Onboarding() {
             <span className="display text-[22px] font-semibold">Greenlight</span>
           </div>
           <h1 className="display mt-14 text-[44px] leading-[1.02] font-semibold">
-            Know which days are <span className="text-go">green</span>, together.
+            More fun, <span className="text-go">zero surprises</span>.
           </h1>
           <p className="mt-5 text-[16px] leading-relaxed text-ink-2">
-            A fertility-awareness tracker built to <strong className="font-semibold text-ink">avoid pregnancy</strong>. Temperature and cervical-mucus rules
-            decide each day; when the data is unclear, the day is red. Both partners see the same answer.
+            Your cycle, made simple. Greenlight shows you the days to <strong className="font-semibold text-ink">relax and enjoy</strong> and the days to
+            play it safe — so you can say yes with confidence and stay baby-free. Your partner sees the same answer.
           </p>
           <div className="mt-8 grid grid-cols-3 gap-2">
-            <Stat n="0.4%" label="perfect-use failure rate of the symptothermal method" />
-            <Stat n="2" label="signs cross-checked before any luteal green day" />
-            <Stat n="1" label="shared view — no guessing between partners" />
+            <Stat n="3" label="taps a day — period, LH test, intimacy" />
+            <Stat n="♡" label="yes days to enjoy, careful days to plan around" />
+            <Stat n="2" label="of you, one shared view — no guessing" />
           </div>
           <div className="mt-auto flex flex-col gap-3 pt-10">
-            <Button onClick={() => setStep('start')}>I have a cycle — start tracking</Button>
+            <Button onClick={() => setStep('start')}>I’m her — let’s start</Button>
             <Button variant="secondary" onClick={() => setStep('join')}>
-              I’m the partner — I have an invite code
+              I’m the partner — I have a code
             </Button>
             <button onClick={demo} disabled={busy} className="mt-1 inline-flex items-center justify-center gap-1.5 text-[14px] font-semibold text-muted hover:text-ink">
               <Sparkles size={15} /> Explore with demo data
@@ -90,7 +87,7 @@ export function Onboarding() {
         >
           <Back onClick={() => setStep('welcome')} />
           <h1 className="display mt-6 text-[32px] font-semibold leading-tight">Set up your cycle</h1>
-          <p className="mt-2 text-[15px] text-ink-2">You can change everything later. The first cycle is mostly red until Greenlight confirms your first ovulation.</p>
+          <p className="mt-2 text-[15px] text-ink-2">You can change everything later. Your first cycle has more careful days while Greenlight learns your rhythm.</p>
           <div className="mt-6 flex flex-col gap-5">
             <Field label="Your name">
               <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ada" autoComplete="given-name" />
@@ -98,20 +95,9 @@ export function Onboarding() {
             <Field label="First day of your last period">
               <input type="date" className={inputClass} value={lastPeriod} max={today} onChange={(e) => setLastPeriod(e.target.value)} />
             </Field>
-            <Field label={`Typical cycle length · ${cycleLength} days`} hint="Only used for early predictions — real data takes over quickly.">
-              <input type="range" min={21} max={40} value={cycleLength} onChange={(e) => setCycleLength(Number(e.target.value))} className="w-full accent-ink" />
+            <Field label={`Typical cycle length · ${cycleLength} days`} hint="A starting guess — your real cycles take over as you log them.">
+              <input type="range" min={21} max={40} value={cycleLength} onChange={(e) => setCycleLength(Number(e.target.value))} className="w-full accent-go" />
             </Field>
-            <Field label="Temperature unit">
-              <Segmented value={unit} onChange={(v) => v && setUnit(v)} options={[{ value: 'c', label: '°C' }, { value: 'f', label: '°F' }]} />
-            </Field>
-            <div className="card px-4">
-              <Toggle
-                checked={trackMucus}
-                onChange={setTrackMucus}
-                label="I’ll track cervical mucus too"
-                hint="Recommended. Cross-checking mucus with temperature is what makes the method reliable. Turn off to use temperature only (one extra red day per cycle)."
-              />
-            </div>
           </div>
           {error && <p className="mt-4 text-[13px] text-stop-deep">{error}</p>}
           <div className="mt-auto pt-8">
@@ -180,9 +166,8 @@ function Back({ onClick }: { onClick: () => void }) {
 export function Logo({ size = 34 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
-      <rect width="64" height="64" rx="16" fill="#1b1a18" />
-      <circle cx="32" cy="24" r="9" fill="#d64f45" />
-      <circle cx="32" cy="44" r="9" fill="#2e8b57" />
+      <rect width="64" height="64" rx="16" fill="#fbe3ec" />
+      <path d="M32 50s-16-9.6-16-21.2C16 22.3 20.6 18 26 18c2.8 0 4.9 1.3 6 3.2 1.1-1.9 3.2-3.2 6-3.2 5.4 0 10 4.3 10 10.8C48 40.4 32 50 32 50z" fill="#e14f8e" />
     </svg>
   )
 }
