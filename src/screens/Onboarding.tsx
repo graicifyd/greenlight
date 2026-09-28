@@ -1,5 +1,6 @@
 import { ArrowLeft, Sparkles } from 'lucide-react'
 import { useState } from 'react'
+import { Illustration } from '../components/Illustrations'
 import { Button, Field, cx, inputClass } from '../components/ui'
 import { addDays } from '../engine/dates'
 import { useStore } from '../lib/store'
@@ -52,18 +53,14 @@ export function Onboarding() {
             <Logo />
             <span className="display text-[22px] font-semibold">Greenlight</span>
           </div>
-          <h1 className="display mt-14 text-[44px] leading-[1.02] font-semibold">
-            More fun, <span className="text-go">zero surprises</span>.
+          <Illustration scene="beach" className="mt-8 block h-auto w-full" />
+          <h1 className="display mt-8 text-[38px] leading-[1.05] font-semibold">
+            Live fully. <span className="text-go">Love freely.</span>
           </h1>
-          <p className="mt-5 text-[16px] leading-relaxed text-ink-2">
-            Your cycle, made simple. Greenlight shows you the days to <strong className="font-semibold text-ink">relax and enjoy</strong> and the days to
-            play it safe — so you can say yes with confidence and stay baby-free. Your partner sees the same answer.
+          <p className="mt-4 text-[16px] leading-relaxed text-ink-2">
+            Your body, your plans, your joy. Greenlight shows the days to <strong className="font-semibold text-ink">relax and enjoy</strong> and the days to
+            get creative — so every cycle ends in a little victory. Your partner sees the same answer.
           </p>
-          <div className="mt-8 grid grid-cols-3 gap-2">
-            <Stat n="3" label="taps a day — period, LH test, intimacy" />
-            <Stat n="♡" label="yes days to enjoy, careful days to plan around" />
-            <Stat n="2" label="of you, one shared view — no guessing" />
-          </div>
           <div className="mt-auto flex flex-col gap-3 pt-10">
             <Button onClick={() => setStep('start')}>I’m her — let’s start</Button>
             <Button variant="secondary" onClick={() => setStep('join')}>
@@ -142,15 +139,6 @@ export function Onboarding() {
           </div>
         </form>
       )}
-    </div>
-  )
-}
-
-function Stat({ n, label }: { n: string; label: string }) {
-  return (
-    <div className="card px-3 py-3">
-      <div className="display text-[26px] font-semibold leading-none">{n}</div>
-      <div className="mt-1.5 text-[11.5px] leading-snug text-muted">{label}</div>
     </div>
   )
 }

@@ -105,7 +105,7 @@ export function LogScreen({ date, setDate }: { date: string; setDate: (d: string
             />
             {existing?.sex === 'unprotected' && assessment?.light === 'red' && (
               <p className="mt-2 rounded-xl bg-stop-tint px-3 py-2 text-[13px] leading-snug text-stop-deep">
-                This was a careful day, so there’s a real chance of pregnancy. The morning-after pill works best within 72 hours — no judgement, just peace of mind.
+                Breathe — you’re not alone. This was a careful day, so there’s a real chance of pregnancy. The morning-after pill works best within 72 hours. No judgement, only love — then we start fresh together.
               </p>
             )}
           </section>

@@ -1,4 +1,4 @@
-import { CalendarDays, Ellipsis, Flower2, PenLine, Sun } from 'lucide-react'
+import { CalendarDays, Ellipsis, PenLine, Sun, Trophy } from 'lucide-react'
 import { useState } from 'react'
 import { cx } from './components/ui'
 import { useStore } from './lib/store'
@@ -15,7 +15,7 @@ const TABS: { id: Tab; label: string; icon: typeof Sun }[] = [
   { id: 'today', label: 'Today', icon: Sun },
   { id: 'log', label: 'Log', icon: PenLine },
   { id: 'calendar', label: 'Calendar', icon: CalendarDays },
-  { id: 'cycle', label: 'Rhythm', icon: Flower2 },
+  { id: 'cycle', label: 'Wins', icon: Trophy },
   { id: 'more', label: 'More', icon: Ellipsis },
 ]
 
@@ -46,7 +46,7 @@ export default function App() {
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md md:my-6 md:min-h-0 md:h-[calc(100dvh-3rem)] md:max-h-[920px] md:rounded-[36px] md:border md:border-line md:bg-cream md:shadow-float md:overflow-hidden relative flex flex-col">
       <main className="flex-1 md:overflow-y-auto no-scrollbar px-4 pt-[max(16px,env(safe-area-inset-top))] pb-28">
-        {tab === 'today' && <TodayScreen onLog={openLog} onLearn={() => setTab('more')} onCalendar={() => setTab('calendar')} />}
+        {tab === 'today' && <TodayScreen onLog={openLog} onLearn={() => setTab('more')} onCalendar={() => setTab('calendar')} onWins={() => setTab('cycle')} />}
         {tab === 'log' && <LogScreen date={logDate} setDate={setLogDate} />}
         {tab === 'calendar' && <CalendarScreen onLog={openLog} />}
         {tab === 'cycle' && <CycleScreen />}

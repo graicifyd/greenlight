@@ -1,4 +1,8 @@
+import type { ReactNode } from 'react'
+import { Award, Flame, Lock, Trophy } from 'lucide-react'
+import { Illustration } from '../components/Illustrations'
 import { Card, SectionTitle, cx } from '../components/ui'
+import { computeWins } from '../engine/streaks'
 import { addDays, daysBetween } from '../engine/dates'
 import type { Analysis, Cycle } from '../engine/engine'
 import { fertileWindow } from '../engine/engine'
@@ -11,13 +15,45 @@ export function CycleScreen() {
   if (!analysis || !state) return null
   const current = analysis.current
   const past = analysis.cycles.filter((c) => c.complete).reverse()
+  const wins = computeWins(analysis, today)
 
   return (
     <div className="rise flex flex-col gap-5">
       <header className="pt-1">
-        <h1 className="display text-[28px] font-semibold leading-tight">Your rhythm</h1>
-        <p className="mt-1 text-[14px] text-ink-2">Each little bar is one day of your cycle.</p>
+        <h1 className="display text-[28px] font-semibold leading-tight">Your wins</h1>
+        <p className="mt-1 text-[14px] text-ink-2">Every cycle you live on your own terms is a victory. Look at you go.</p>
       </header>
+
+      <section className="card overflow-hidden p-0">
+        <Illustration scene="victory" className="block h-auto w-full" />
+        <div className="grid grid-cols-3 divide-x divide-line p-4 text-center">
+          <Stat icon={<Flame size={16} />} value={wins.streak} label="Day streak" />
+          <Stat icon={<Trophy size={16} />} value={wins.victories} label="Victories" />
+          <Stat icon={<Award size={16} />} value={wins.bestStreak} label="Best streak" />
+        </div>
+      </section>
+
+      <section>
+        <SectionTitle>Badges</SectionTitle>
+        <div className="grid grid-cols-2 gap-2.5">
+          {wins.badges.map((b) => (
+            <Card key={b.id} className={cx('flex items-start gap-3 p-3.5', !b.earned && 'opacity-55')}>
+              <span className={cx('grid h-9 w-9 shrink-0 place-items-center rounded-xl', b.earned ? 'bg-go text-white' : 'bg-line text-muted')}>
+                {b.earned ? <Award size={17} /> : <Lock size={15} />}
+              </span>
+              <span>
+                <span className="block text-[14px] font-semibold leading-tight">{b.title}</span>
+                <span className="mt-0.5 block text-[12px] leading-snug text-muted">{b.detail}</span>
+              </span>
+            </Card>
+          ))}
+        </div>
+        <p className="mt-2 px-1 text-[12px] leading-snug text-muted">
+          Your streak counts every day without unprotected sex on a careful day. If it ever resets, be gentle with yourself — just start again.
+        </p>
+      </section>
+
+      <h2 className="display -mb-2 text-[20px] font-semibold">Your rhythm</h2>
 
       {current ? (
         <CurrentCycle analysis={analysis} cycle={current} today={today} />
@@ -139,5 +175,15 @@ function Legend({ swatch, label, small }: { swatch: string; label: string; small
       <span className={cx('rounded-full', swatch, small ? 'h-1.5 w-1.5' : 'h-3 w-3')} />
       {label}
     </span>
+  )
+}
+
+function Stat({ icon, value, label }: { icon: ReactNode; value: number; label: string }) {
+  return (
+    <div className="flex flex-col items-center gap-0.5">
+      <span className="text-go">{icon}</span>
+      <span className="display text-[24px] font-semibold leading-none">{value}</span>
+      <span className="text-[11.5px] font-medium text-muted">{label}</span>
+    </div>
   )
 }
