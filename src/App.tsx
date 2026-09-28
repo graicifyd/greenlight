@@ -1,5 +1,5 @@
 import { CalendarDays, Ellipsis, PenLine, Sun, Trophy } from 'lucide-react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { cx } from './components/ui'
 import { useStore } from './lib/store'
 import { CalendarScreen } from './screens/CalendarScreen'
@@ -24,6 +24,10 @@ export default function App() {
   const [tab, setTab] = useState<Tab>('today')
   const [logDate, setLogDate] = useState<string>(today)
   const [onboarding, setOnboarding] = useState(false)
+  const signedOut = !state
+  useEffect(() => {
+    if (signedOut) setTab('today')
+  }, [signedOut])
 
   const openLog = (date: string) => {
     setLogDate(date)
@@ -42,7 +46,10 @@ export default function App() {
     )
   }
 
-  if (!state || onboarding) return <Onboarding onStart={() => setOnboarding(true)} onDone={() => setOnboarding(false)} />
+  if (!state || onboarding) return <Onboarding onStart={() => setOnboarding(true)} onDone={() => {
+    setOnboarding(false)
+    setTab('today')
+  }} />
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md md:my-6 md:min-h-0 md:h-[calc(100dvh-3rem)] md:max-h-[920px] md:rounded-[36px] md:border md:border-line md:bg-cream md:shadow-float md:overflow-hidden relative flex flex-col">

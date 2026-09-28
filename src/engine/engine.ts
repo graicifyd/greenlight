@@ -211,7 +211,10 @@ function assessKnownDay(cycle: Cycle, cycleDay: number, date: string, win: Ferti
     ...base,
     light: 'red',
     phase: isPeriod ? 'menstrual' : 'fertile',
-    reason: `Inside your fertile window (days ${win.start}–${win.end} for your cycles). Best to wait or use a condom.`,
+    reason:
+      cycleDay < win.start
+        ? `${cycle.preOvRule} Your fertile window is estimated at days ${win.start}–${win.end}.`
+        : `Inside your fertile window (days ${win.start}–${win.end} for your cycles). Best to wait or use a condom.`,
   }
 }
 
