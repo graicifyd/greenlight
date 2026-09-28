@@ -1,25 +1,32 @@
-import { ArrowLeft, Sparkles } from 'lucide-react'
-import { useState } from 'react'
-import { Button, Field, Segmented, Toggle, cx, inputClass } from '../components/ui'
+import { ArrowLeft, Check, Copy, Share2, Sparkles } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { Illustration, type Scene } from '../components/Illustrations'
+import { Button, cx, inputClass } from '../components/ui'
 import { addDays } from '../engine/dates'
-import type { TempUnit } from '../engine/types'
 import { useStore } from '../lib/store'
 
-type Step = 'welcome' | 'start' | 'join'
+type Step = 'welcome' | 'name' | 'period' | 'length' | 'invite' | 'code' | 'partner-name'
 
-export function Onboarding() {
-  const { createCouple, join, saveLog, loadDemo, today } = useStore()
+const HER_STEPS: Step[] = ['name', 'period', 'length', 'invite']
+const PARTNER_STEPS: Step[] = ['code', 'partner-name']
+
+export function Onboarding({ onStart, onDone }: { onStart: () => void; onDone: () => void }) {
+  const { createCouple, join, saveLog, loadDemo, today, state } = useStore()
   const joinParam = new URLSearchParams(location.search).get('join')?.toUpperCase() ?? ''
-  const [step, setStep] = useState<Step>(joinParam ? 'join' : 'welcome')
+  const [step, setStep] = useState<Step>(joinParam ? 'code' : 'welcome')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
 
   const [name, setName] = useState('')
   const [lastPeriod, setLastPeriod] = useState(addDays(today, -7))
   const [cycleLength, setCycleLength] = useState(28)
-  const [trackMucus, setTrackMucus] = useState(true)
-  const [unit, setUnit] = useState<TempUnit>('c')
   const [code, setCode] = useState(joinParam)
+
+  const go = (next: Step) => {
+    setError(null)
+    setStep(next)
+  }
 
   const guard = async (fn: () => Promise<void>) => {
     setBusy(true)
@@ -33,44 +40,65 @@ export function Onboarding() {
     }
   }
 
-  const start = () =>
+  const create = () =>
     guard(async () => {
-      await createCouple(name.trim() || 'Me', 'cycling', { typicalCycleLength: cycleLength, trackMucus, tempUnit: unit })
+      onStart()
+      await createCouple(name.trim() || 'Me', 'cycling', { typicalCycleLength: cycleLength })
       if (lastPeriod) await saveLog({ date: lastPeriod, flow: 'medium' })
+      setStep('invite')
     })
 
   const demo = () =>
     guard(async () => {
-      await createCouple('Ada', 'cycling', { typicalCycleLength: 29, trackMucus: true, tempUnit: 'c' })
+      await createCouple('Ada', 'cycling', { typicalCycleLength: 29 })
       await loadDemo()
     })
 
   const doJoin = () => guard(() => join(code, name.trim() || 'Partner'))
 
+  const inviteCode = state?.inviteCode ?? ''
+  const copyCode = async () => {
+    try {
+      await navigator.clipboard.writeText(inviteCode)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch {
+      /* clipboard unavailable */
+    }
+  }
+  const share = async () => {
+    const data = { title: 'Join me on Greenlight', text: `Use code ${inviteCode} to see our yes days together.`, url: `${location.origin}/?join=${inviteCode}` }
+    if (navigator.share) {
+      try {
+        await navigator.share(data)
+      } catch {
+        /* cancelled */
+      }
+    } else await copyCode()
+  }
+
+  const flow = PARTNER_STEPS.includes(step) ? PARTNER_STEPS : HER_STEPS
+  const progress = step === 'welcome' ? null : { at: flow.indexOf(step), of: flow.length }
+
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-6 pt-[max(24px,env(safe-area-inset-top))] pb-[max(24px,env(safe-area-inset-bottom))]">
       {step === 'welcome' && (
         <div className="rise flex flex-1 flex-col">
-          <div className="mt-10 flex items-center gap-3">
+          <div className="mt-8 flex items-center gap-3">
             <Logo />
             <span className="display text-[22px] font-semibold">Greenlight</span>
           </div>
-          <h1 className="display mt-14 text-[44px] leading-[1.02] font-semibold">
-            Know which days are <span className="text-go">green</span>, together.
+          <Illustration scene="beach" className="mt-8 block h-auto w-full" />
+          <h1 className="display mt-8 text-[38px] leading-[1.05] font-semibold">
+            Live fully. <span className="text-go">Love freely.</span>
           </h1>
-          <p className="mt-5 text-[16px] leading-relaxed text-ink-2">
-            A fertility-awareness tracker built to <strong className="font-semibold text-ink">avoid pregnancy</strong>. Temperature and cervical-mucus rules
-            decide each day; when the data is unclear, the day is red. Both partners see the same answer.
+          <p className="mt-4 text-[16px] leading-relaxed text-ink-2">
+            Your body, your plans, your joy. Know the days to relax and enjoy, and the days to get creative.
           </p>
-          <div className="mt-8 grid grid-cols-3 gap-2">
-            <Stat n="0.4%" label="perfect-use failure rate of the symptothermal method" />
-            <Stat n="2" label="signs cross-checked before any luteal green day" />
-            <Stat n="1" label="shared view — no guessing between partners" />
-          </div>
           <div className="mt-auto flex flex-col gap-3 pt-10">
-            <Button onClick={() => setStep('start')}>I have a cycle — start tracking</Button>
-            <Button variant="secondary" onClick={() => setStep('join')}>
-              I’m the partner — I have an invite code
+            <Button onClick={() => go('name')}>I’m her — let’s start</Button>
+            <Button variant="secondary" onClick={() => go('code')}>
+              I’m the partner — I have a code
             </Button>
             <button onClick={demo} disabled={busy} className="mt-1 inline-flex items-center justify-center gap-1.5 text-[14px] font-semibold text-muted hover:text-ink">
               <Sparkles size={15} /> Explore with demo data
@@ -80,92 +108,189 @@ export function Onboarding() {
         </div>
       )}
 
-      {step === 'start' && (
-        <form
-          className="rise flex flex-1 flex-col"
-          onSubmit={(e) => {
-            e.preventDefault()
-            void start()
-          }}
+      {step === 'name' && (
+        <StepScreen
+          key={step}
+          progress={progress}
+          onBack={() => go('welcome')}
+          scene="bloom"
+          title="First, what should we call you?"
+          subtitle="Just a first name — it’s how your partner will see you."
+          cta="Continue"
+          onNext={() => go('period')}
+          disabled={!name.trim()}
         >
-          <Back onClick={() => setStep('welcome')} />
-          <h1 className="display mt-6 text-[32px] font-semibold leading-tight">Set up your cycle</h1>
-          <p className="mt-2 text-[15px] text-ink-2">You can change everything later. The first cycle is mostly red until Greenlight confirms your first ovulation.</p>
-          <div className="mt-6 flex flex-col gap-5">
-            <Field label="Your name">
-              <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ada" autoComplete="given-name" />
-            </Field>
-            <Field label="First day of your last period">
-              <input type="date" className={inputClass} value={lastPeriod} max={today} onChange={(e) => setLastPeriod(e.target.value)} />
-            </Field>
-            <Field label={`Typical cycle length · ${cycleLength} days`} hint="Only used for early predictions — real data takes over quickly.">
-              <input type="range" min={21} max={40} value={cycleLength} onChange={(e) => setCycleLength(Number(e.target.value))} className="w-full accent-ink" />
-            </Field>
-            <Field label="Temperature unit">
-              <Segmented value={unit} onChange={(v) => v && setUnit(v)} options={[{ value: 'c', label: '°C' }, { value: 'f', label: '°F' }]} />
-            </Field>
-            <div className="card px-4">
-              <Toggle
-                checked={trackMucus}
-                onChange={setTrackMucus}
-                label="I’ll track cervical mucus too"
-                hint="Recommended. Cross-checking mucus with temperature is what makes the method reliable. Turn off to use temperature only (one extra red day per cycle)."
-              />
-            </div>
-          </div>
-          {error && <p className="mt-4 text-[13px] text-stop-deep">{error}</p>}
-          <div className="mt-auto pt-8">
-            <Button type="submit" disabled={busy} className="w-full">
-              {busy ? 'Creating…' : 'Start tracking'}
-            </Button>
-          </div>
-        </form>
+          <input autoFocus className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="given-name" aria-label="Your name" />
+        </StepScreen>
       )}
 
-      {step === 'join' && (
-        <form
-          className="rise flex flex-1 flex-col"
-          onSubmit={(e) => {
-            e.preventDefault()
-            void doJoin()
-          }}
+      {step === 'period' && (
+        <StepScreen
+          key={step}
+          progress={progress}
+          onBack={() => go('name')}
+          scene="cozy"
+          title={`When did your last period start, ${name.trim() || 'lovely'}?`}
+          subtitle="The first day of bleeding. A close guess is fine — you can fix it later."
+          cta="Continue"
+          onNext={() => go('length')}
+          disabled={!lastPeriod}
         >
-          <Back onClick={() => setStep('welcome')} />
-          <h1 className="display mt-6 text-[32px] font-semibold leading-tight">Join your partner</h1>
-          <p className="mt-2 text-[15px] text-ink-2">Ask your partner for the 6-character invite code in their Greenlight app (More → Partner).</p>
-          <div className="mt-6 flex flex-col gap-5">
-            <Field label="Invite code">
-              <input
-                className={cx(inputClass, 'font-mono text-[22px] tracking-[0.3em] uppercase text-center')}
-                value={code}
-                onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
-                placeholder="ABC123"
-                autoCapitalize="characters"
-                autoCorrect="off"
-              />
-            </Field>
-            <Field label="Your name">
-              <input className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Ben" autoComplete="given-name" />
-            </Field>
+          <input type="date" className={inputClass} value={lastPeriod} max={today} onChange={(e) => setLastPeriod(e.target.value)} aria-label="First day of your last period" />
+        </StepScreen>
+      )}
+
+      {step === 'length' && (
+        <StepScreen
+          key={step}
+          progress={progress}
+          onBack={() => go('period')}
+          scene="laptop"
+          title="How long is your cycle, usually?"
+          subtitle="From one period to the next. Not sure? Leave it at 28 — your real cycles take over as you log them."
+          cta={busy ? 'Setting up…' : 'Create my tracker'}
+          onNext={() => void create()}
+          disabled={busy}
+          error={error}
+        >
+          <div className="text-center">
+            <div className="display text-[48px] font-semibold leading-none text-go-deep">{cycleLength}</div>
+            <div className="mt-1 text-[14px] text-muted">days</div>
           </div>
-          {error && <p className="mt-4 text-[13px] text-stop-deep">{error}</p>}
-          <div className="mt-auto pt-8">
-            <Button type="submit" disabled={busy || code.length < 6} className="w-full">
-              {busy ? 'Joining…' : 'Join'}
-            </Button>
+          <input type="range" min={21} max={40} value={cycleLength} onChange={(e) => setCycleLength(Number(e.target.value))} className="mt-4 w-full accent-go" aria-label="Typical cycle length" />
+        </StepScreen>
+      )}
+
+      {step === 'invite' && (
+        <StepScreen
+          key={step}
+          progress={progress}
+          scene="dance"
+          title="You’re all set! Invite your partner?"
+          subtitle="They’ll see the same yes days and careful days — no awkward guessing."
+          cta="Go to my day"
+          onNext={onDone}
+          secondary={{ label: 'I’ll do this later', onClick: onDone }}
+        >
+          <div className="card flex items-center justify-between gap-3 p-4">
+            <div className="display text-[28px] font-semibold tracking-[0.2em]">{inviteCode || '······'}</div>
+            <div className="flex gap-1">
+              <button type="button" onClick={() => void copyCode()} className="rounded-xl p-2.5 hover:bg-go-tint" aria-label="Copy code">
+                {copied ? <Check size={18} className="text-go-deep" /> : <Copy size={18} />}
+              </button>
+              <button type="button" onClick={() => void share()} className="rounded-xl p-2.5 hover:bg-go-tint" aria-label="Share invite">
+                <Share2 size={18} />
+              </button>
+            </div>
           </div>
-        </form>
+          <p className="mt-2 text-[13px] text-muted">You can always find this later in More → Partner.</p>
+        </StepScreen>
+      )}
+
+      {step === 'code' && (
+        <StepScreen
+          key={step}
+          progress={progress}
+          onBack={() => go('welcome')}
+          scene="bloom"
+          title="Enter her invite code"
+          subtitle="She’ll find the 6-character code in her Greenlight app under More → Partner."
+          cta="Continue"
+          onNext={() => go('partner-name')}
+          disabled={code.length < 6}
+        >
+          <input
+            autoFocus
+            className={cx(inputClass, 'font-mono text-[22px] tracking-[0.3em] uppercase text-center')}
+            value={code}
+            onChange={(e) => setCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))}
+            placeholder="ABC123"
+            autoCapitalize="characters"
+            autoCorrect="off"
+            aria-label="Invite code"
+          />
+        </StepScreen>
+      )}
+
+      {step === 'partner-name' && (
+        <StepScreen
+          key={step}
+          progress={progress}
+          onBack={() => go('code')}
+          scene="laptop"
+          title="And your name?"
+          subtitle="So she knows it’s you."
+          cta={busy ? 'Joining…' : 'Join'}
+          onNext={() => void doJoin()}
+          disabled={busy || !name.trim()}
+          error={error}
+        >
+          <input autoFocus className={inputClass} value={name} onChange={(e) => setName(e.target.value)} placeholder="Your name" autoComplete="given-name" aria-label="Your name" />
+        </StepScreen>
       )}
     </div>
   )
 }
 
-function Stat({ n, label }: { n: string; label: string }) {
+function StepScreen({
+  progress,
+  onBack,
+  scene,
+  title,
+  subtitle,
+  children,
+  cta,
+  onNext,
+  disabled,
+  error,
+  secondary,
+}: {
+  progress: { at: number; of: number } | null
+  onBack?: () => void
+  scene: Scene
+  title: string
+  subtitle: string
+  children: ReactNode
+  cta: string
+  onNext: () => void
+  disabled?: boolean
+  error?: string | null
+  secondary?: { label: string; onClick: () => void }
+}) {
   return (
-    <div className="card px-3 py-3">
-      <div className="display text-[26px] font-semibold leading-none">{n}</div>
-      <div className="mt-1.5 text-[11.5px] leading-snug text-muted">{label}</div>
-    </div>
+    <form
+      className="rise flex flex-1 flex-col"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (!disabled) onNext()
+      }}
+    >
+      <div className="flex h-9 items-center justify-between">
+        {onBack ? <Back onClick={onBack} /> : <span />}
+        {progress && (
+          <div className="flex gap-1.5" aria-label={`Step ${progress.at + 1} of ${progress.of}`}>
+            {Array.from({ length: progress.of }, (_, i) => (
+              <span key={i} className={cx('h-1.5 rounded-full transition-all', i === progress.at ? 'w-6 bg-go' : i < progress.at ? 'w-1.5 bg-go' : 'w-1.5 bg-line')} />
+            ))}
+          </div>
+        )}
+      </div>
+      <Illustration scene={scene} className="mx-auto mt-6 block h-auto w-4/5" />
+      <h1 className="display mt-8 text-[28px] font-semibold leading-tight">{title}</h1>
+      <p className="mt-2 text-[15px] leading-relaxed text-ink-2">{subtitle}</p>
+      <div className="mt-6">{children}</div>
+      {error && <p className="mt-4 text-[13px] text-stop-deep">{error}</p>}
+      <div className="mt-auto flex flex-col gap-2 pt-8">
+        <Button type="submit" disabled={disabled} className="w-full">
+          {cta}
+        </Button>
+        {secondary && (
+          <Button variant="ghost" onClick={secondary.onClick} className="w-full">
+            {secondary.label}
+          </Button>
+        )}
+      </div>
+    </form>
   )
 }
 
@@ -180,9 +305,8 @@ function Back({ onClick }: { onClick: () => void }) {
 export function Logo({ size = 34 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden>
-      <rect width="64" height="64" rx="16" fill="#1b1a18" />
-      <circle cx="32" cy="24" r="9" fill="#d64f45" />
-      <circle cx="32" cy="44" r="9" fill="#2e8b57" />
+      <rect width="64" height="64" rx="16" fill="#fbe3ec" />
+      <path d="M32 50s-16-9.6-16-21.2C16 22.3 20.6 18 26 18c2.8 0 4.9 1.3 6 3.2 1.1-1.9 3.2-3.2 6-3.2 5.4 0 10 4.3 10 10.8C48 40.4 32 50 32 50z" fill="#e14f8e" />
     </svg>
   )
 }

@@ -1,21 +1,21 @@
-import { CalendarDays, Ellipsis, LineChart, PenLine, Sun } from 'lucide-react'
+import { CalendarDays, Ellipsis, PenLine, Sun, Trophy } from 'lucide-react'
 import { useState } from 'react'
 import { cx } from './components/ui'
 import { useStore } from './lib/store'
 import { CalendarScreen } from './screens/CalendarScreen'
-import { ChartScreen } from './screens/ChartScreen'
+import { CycleScreen } from './screens/CycleScreen'
 import { LogScreen } from './screens/LogScreen'
 import { MoreScreen } from './screens/MoreScreen'
 import { Onboarding } from './screens/Onboarding'
 import { TodayScreen } from './screens/TodayScreen'
 
-export type Tab = 'today' | 'log' | 'calendar' | 'chart' | 'more'
+export type Tab = 'today' | 'log' | 'calendar' | 'cycle' | 'more'
 
 const TABS: { id: Tab; label: string; icon: typeof Sun }[] = [
   { id: 'today', label: 'Today', icon: Sun },
   { id: 'log', label: 'Log', icon: PenLine },
   { id: 'calendar', label: 'Calendar', icon: CalendarDays },
-  { id: 'chart', label: 'Chart', icon: LineChart },
+  { id: 'cycle', label: 'Wins', icon: Trophy },
   { id: 'more', label: 'More', icon: Ellipsis },
 ]
 
@@ -23,6 +23,12 @@ export default function App() {
   const { state, loading, today } = useStore()
   const [tab, setTab] = useState<Tab>('today')
   const [logDate, setLogDate] = useState<string>(today)
+  const [onboarding, setOnboarding] = useState(false)
+  const [wasSignedOut, setWasSignedOut] = useState(!state)
+  if (wasSignedOut !== !state) {
+    setWasSignedOut(!state)
+    if (!state) setTab('today')
+  }
 
   const openLog = (date: string) => {
     setLogDate(date)
@@ -41,15 +47,18 @@ export default function App() {
     )
   }
 
-  if (!state) return <Onboarding />
+  if (!state || onboarding) return <Onboarding onStart={() => setOnboarding(true)} onDone={() => {
+    setOnboarding(false)
+    setTab('today')
+  }} />
 
   return (
     <div className="mx-auto min-h-dvh w-full max-w-md md:my-6 md:min-h-0 md:h-[calc(100dvh-3rem)] md:max-h-[920px] md:rounded-[36px] md:border md:border-line md:bg-cream md:shadow-float md:overflow-hidden relative flex flex-col">
       <main className="flex-1 md:overflow-y-auto no-scrollbar px-4 pt-[max(16px,env(safe-area-inset-top))] pb-28">
-        {tab === 'today' && <TodayScreen onLog={openLog} onLearn={() => setTab('more')} onCalendar={() => setTab('calendar')} />}
+        {tab === 'today' && <TodayScreen onLog={openLog} onLearn={() => setTab('more')} onCalendar={() => setTab('calendar')} onWins={() => setTab('cycle')} />}
         {tab === 'log' && <LogScreen date={logDate} setDate={setLogDate} />}
         {tab === 'calendar' && <CalendarScreen onLog={openLog} />}
-        {tab === 'chart' && <ChartScreen />}
+        {tab === 'cycle' && <CycleScreen />}
         {tab === 'more' && <MoreScreen />}
       </main>
       <nav className="fixed bottom-0 left-1/2 w-full max-w-md -translate-x-1/2 md:absolute md:left-0 md:translate-x-0 px-4 pb-[max(14px,env(safe-area-inset-bottom))] pt-2 bg-gradient-to-t from-cream via-cream/95 to-transparent">
@@ -66,7 +75,7 @@ export default function App() {
                 }}
                 className={cx(
                   'flex flex-1 flex-col items-center gap-0.5 rounded-[20px] py-2 text-[11px] font-semibold transition',
-                  active ? 'bg-ink text-cream' : 'text-muted hover:text-ink',
+                  active ? 'bg-go text-white' : 'text-muted hover:text-go-deep',
                 )}
                 aria-current={active ? 'page' : undefined}
               >

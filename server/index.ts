@@ -55,11 +55,10 @@ interface LogRow {
   data: string
 }
 
-const DEFAULT_SETTINGS = { tempUnit: 'c', caution: 'standard', trackMucus: true, typicalCycleLength: 28 }
+const DEFAULT_SETTINGS = { caution: 'standard', typicalCycleLength: 28 }
 const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 
 const FLOWS = new Set(['spotting', 'light', 'medium', 'heavy'])
-const MUCUS_TYPES = new Set(['dry', 'sticky', 'creamy', 'watery', 'eggwhite'])
 const LH_RESULTS = new Set(['negative', 'positive'])
 const SEX_ENTRIES = new Set(['protected', 'unprotected'])
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/
@@ -71,11 +70,6 @@ function sanitiseLog(input: unknown): Record<string, unknown> | null {
   if (!DATE_RE.test(String(src.date))) return null
   const out: Record<string, unknown> = { date: String(src.date) }
   if (src.flow != null && FLOWS.has(String(src.flow))) out.flow = src.flow
-  if (typeof src.temp === 'number' && Number.isFinite(src.temp) && src.temp >= 30 && src.temp <= 45) {
-    out.temp = src.temp
-    if (src.tempDisturbed === true) out.tempDisturbed = true
-  }
-  if (src.mucus != null && MUCUS_TYPES.has(String(src.mucus))) out.mucus = src.mucus
   if (src.lh != null && LH_RESULTS.has(String(src.lh))) out.lh = src.lh
   if (src.sex != null && SEX_ENTRIES.has(String(src.sex))) out.sex = src.sex
   if (typeof src.note === 'string' && src.note.trim()) out.note = src.note.slice(0, 2000)
@@ -86,9 +80,7 @@ function sanitiseSettings(input: unknown): Record<string, unknown> {
   if (typeof input !== 'object' || input == null) return {}
   const src = input as Record<string, unknown>
   const out: Record<string, unknown> = {}
-  if (src.tempUnit === 'c' || src.tempUnit === 'f') out.tempUnit = src.tempUnit
   if (src.caution === 'standard' || src.caution === 'strict') out.caution = src.caution
-  if (typeof src.trackMucus === 'boolean') out.trackMucus = src.trackMucus
   if (Number.isInteger(src.typicalCycleLength) && (src.typicalCycleLength as number) >= 20 && (src.typicalCycleLength as number) <= 45) {
     out.typicalCycleLength = src.typicalCycleLength
   }

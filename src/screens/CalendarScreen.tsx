@@ -5,7 +5,7 @@ import { Button, Card, LightDot, Pill, Sheet, cx } from '../components/ui'
 import { addDays, fromISO, toISO } from '../engine/dates'
 import type { DayAssessment } from '../engine/engine'
 import { useStore } from '../lib/store'
-import { FLOW_LABEL, MUCUS_LABEL, fmtLong, fmtMonth, fmtTemp } from '../lib/format'
+import { FLOW_LABEL, LIGHT_LABEL, fmtLong, fmtMonth } from '../lib/format'
 
 const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
 
@@ -28,13 +28,13 @@ export function CalendarScreen({ onLog }: { onLog: (date: string) => void }) {
   return (
     <div className="rise flex flex-col gap-4">
       <header className="flex items-center justify-between pt-1">
-        <button onClick={() => setMonth(toISO(addMonths(first, -1)))} className="rounded-full p-2 hover:bg-ink/5" aria-label="Previous month">
+        <button onClick={() => setMonth(toISO(addMonths(first, -1)))} className="rounded-full p-2 hover:bg-go-tint" aria-label="Previous month">
           <ChevronLeft size={22} />
         </button>
         <button onClick={() => setMonth(toISO(startOfMonth(fromISO(today))))} className="display text-[22px] font-semibold">
           {fmtMonth(month)}
         </button>
-        <button onClick={() => setMonth(toISO(addMonths(first, 1)))} className="rounded-full p-2 hover:bg-ink/5" aria-label="Next month">
+        <button onClick={() => setMonth(toISO(addMonths(first, 1)))} className="rounded-full p-2 hover:bg-go-tint" aria-label="Next month">
           <ChevronRight size={22} />
         </button>
       </header>
@@ -62,16 +62,15 @@ export function CalendarScreen({ onLog }: { onLog: (date: string) => void }) {
                     !a && 'text-muted',
                     a && green && (predicted ? 'predicted-stripes bg-go-soft text-go-deep' : 'bg-go text-white'),
                     a && !green && (predicted ? 'predicted-stripes bg-stop-soft text-stop-deep' : 'bg-stop text-white'),
-                    isToday && 'ring-2 ring-ink ring-offset-2 ring-offset-paper',
-                    a?.greenFromEvening && 'bg-gradient-to-br from-stop from-50% to-go to-50%',
+                    isToday && 'ring-2 ring-go-deep ring-offset-2 ring-offset-paper',
                   )}
                 >
                   {Number(d.slice(-2))}
                 </span>
                 <span className="mt-1 flex h-1.5 items-center gap-0.5">
                   {a?.isPeriod && <span className="h-1.5 w-1.5 rounded-full bg-period" />}
-                  {ovulationDates.has(d) && <span className="h-1.5 w-1.5 rounded-full bg-ink" />}
-                  {a?.log?.sex && <span className={cx('h-1.5 w-1.5 rounded-full', a.log.sex === 'protected' ? 'bg-amber' : 'bg-ink/30')} />}
+                  {ovulationDates.has(d) && <span className="h-1.5 w-1.5 rounded-full bg-stop-deep" />}
+                  {a?.log?.sex && <span className={cx('h-1.5 w-1.5 rounded-full', a.log.sex === 'protected' ? 'bg-amber' : 'bg-go')} />}
                 </span>
               </button>
             )
@@ -80,16 +79,16 @@ export function CalendarScreen({ onLog }: { onLog: (date: string) => void }) {
       </Card>
 
       <div className="flex flex-wrap gap-x-4 gap-y-2 px-1 text-[12px] text-muted">
-        <Legend swatch="bg-go" label="Green" />
-        <Legend swatch="bg-stop" label="Red" />
+        <Legend swatch="bg-go" label="Yes day" />
+        <Legend swatch="bg-stop" label="Careful day" />
         <Legend swatch="predicted-stripes bg-go-soft border border-line" label="Predicted" />
         <Legend swatch="bg-period" small label="Period" />
-        <Legend swatch="bg-ink" small label="Ovulation" />
-        <Legend swatch="bg-amber" small label="Sex" />
+        <Legend swatch="bg-stop-deep" small label="Ovulation est." />
+        <Legend swatch="bg-go" small label="Intimacy" />
       </div>
 
       <Sheet open={!!selected} onClose={() => setSelected(null)} title={selected ? fmtLong(selected) : ''}>
-        {selected && <DayDetail date={selected} a={sel} unit={state.settings.tempUnit} onLog={(d) => onLog(d)} today={today} />}
+        {selected && <DayDetail date={selected} a={sel} onLog={(d) => onLog(d)} today={today} />}
       </Sheet>
     </div>
   )
@@ -104,11 +103,11 @@ function Legend({ swatch, label, small }: { swatch: string; label: string; small
   )
 }
 
-function DayDetail({ date, a, unit, onLog, today }: { date: string; a: DayAssessment | undefined; unit: 'c' | 'f'; onLog: (d: string) => void; today: string }) {
+function DayDetail({ date, a, onLog, today }: { date: string; a: DayAssessment | undefined; onLog: (d: string) => void; today: string }) {
   if (!a) {
     return (
       <div className="flex flex-col gap-4 pb-2">
-        <p className="text-[15px] text-ink-2">No cycle information for this day.</p>
+        <p className="text-[15px] text-ink-2">Nothing logged for this day yet.</p>
         {date <= today && <Button onClick={() => onLog(date)}>Log this day</Button>}
       </div>
     )
@@ -120,25 +119,18 @@ function DayDetail({ date, a, unit, onLog, today }: { date: string; a: DayAssess
       <div className={cx('flex items-center gap-3 rounded-2xl p-4', green ? 'bg-go-soft text-go-deep' : 'bg-stop-soft text-stop-deep')}>
         <LightDot light={a.light} size={14} predicted={a.kind === 'predicted'} />
         <div>
-          <div className="display text-[22px] font-semibold leading-none">{green ? 'Green' : a.greenFromEvening ? 'Red, green tonight' : 'Red'}</div>
+          <div className="display text-[22px] font-semibold leading-none">{LIGHT_LABEL[a.light]}</div>
           <div className="mt-1 text-[13px] font-medium opacity-80">
-            {a.kind === 'predicted' ? 'Predicted' : 'Confirmed'} · {a.cycleDay ? `cycle day ${a.cycleDay}` : ''}
+            {a.kind === 'predicted' ? 'Predicted' : 'From your cycle'} · {a.cycleDay ? `cycle day ${a.cycleDay}` : ''}
           </div>
         </div>
       </div>
       <p className="text-[15px] leading-relaxed text-ink-2">{a.reason}</p>
       {log && (
         <div className="flex flex-wrap gap-1.5">
-          {log.flow && <Pill tone="red">Flow · {FLOW_LABEL[log.flow]}</Pill>}
-          {log.temp != null && (
-            <Pill>
-              {fmtTemp(log.temp, unit)}
-              {log.tempDisturbed ? ' · disturbed' : ''}
-            </Pill>
-          )}
-          {log.mucus && <Pill>Mucus · {MUCUS_LABEL[log.mucus]}</Pill>}
+          {log.flow && <Pill tone="red">Period · {FLOW_LABEL[log.flow]}</Pill>}
           {log.lh && <Pill>LH · {log.lh}</Pill>}
-          {log.sex && <Pill tone="amber">Sex · {log.sex}</Pill>}
+          {log.sex && <Pill tone="green">Intimacy · {log.sex === 'protected' ? 'with condom' : 'without'}</Pill>}
           {log.note && <Pill>“{log.note}”</Pill>}
         </div>
       )}
