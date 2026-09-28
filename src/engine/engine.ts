@@ -194,7 +194,7 @@ function assessKnownDay(cycle: Cycle, cycleDay: number, date: string, win: Ferti
   const base = { date, cycleDay, cycleIndex: cycle.index, kind: 'confirmed' as Kind, isPeriod, log }
   const lhDay = Math.max(-1, ...cycle.lhPositiveDays.filter((d) => cycleDay >= d && cycleDay <= d + 3))
   if (lhDay >= 0) {
-    return { ...base, light: 'red', phase: isPeriod ? 'menstrual' : 'fertile', reason: `Positive LH test on day ${lhDay} — careful for three days.` }
+    return { ...base, light: 'red', phase: isPeriod ? 'menstrual' : 'fertile', reason: `Positive LH test on day ${lhDay} — careful that day and the next three.` }
   }
   if (cycleDay <= cycle.preOvGreenUntil) {
     return { ...base, light: 'green', phase: isPeriod ? 'menstrual' : 'follicular', reason: cycle.preOvRule }
@@ -235,7 +235,7 @@ function assessPredictedDay(date: string, cycleDay: number, cycleIndex: number |
   const base = { date, cycleDay, cycleIndex, kind: 'predicted' as Kind, isPeriod: isNextCycle && cycleDay <= 5 }
   const lhRed = proj.lhPositiveDays.some((d) => cycleDay >= d && cycleDay <= d + 3)
   if (lhRed) {
-    return { ...base, light: 'red', phase: base.isPeriod ? 'menstrual' : 'fertile', reason: 'Positive LH test — careful for three days.' }
+    return { ...base, light: 'red', phase: base.isPeriod ? 'menstrual' : 'fertile', reason: 'Positive LH test — careful that day and the next three.' }
   }
   if (cycleDay <= proj.preOvUntil) {
     return {

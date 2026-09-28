@@ -175,10 +175,10 @@ export function Onboarding({ onStart, onDone }: { onStart: () => void; onDone: (
           <div className="card flex items-center justify-between gap-3 p-4">
             <div className="display text-[28px] font-semibold tracking-[0.2em]">{inviteCode || '······'}</div>
             <div className="flex gap-1">
-              <button onClick={() => void copyCode()} className="rounded-xl p-2.5 hover:bg-go-tint" aria-label="Copy code">
+              <button type="button" onClick={() => void copyCode()} className="rounded-xl p-2.5 hover:bg-go-tint" aria-label="Copy code">
                 {copied ? <Check size={18} className="text-go-deep" /> : <Copy size={18} />}
               </button>
-              <button onClick={() => void share()} className="rounded-xl p-2.5 hover:bg-go-tint" aria-label="Share invite">
+              <button type="button" onClick={() => void share()} className="rounded-xl p-2.5 hover:bg-go-tint" aria-label="Share invite">
                 <Share2 size={18} />
               </button>
             </div>
