@@ -156,7 +156,7 @@ api.post('/couples', (req, res) => {
   db.prepare('INSERT INTO couples (id, invite_code, settings, version, created_at) VALUES (?, ?, ?, 1, ?)').run(
     coupleId,
     inviteCode(),
-    JSON.stringify({ ...DEFAULT_SETTINGS, ...(settings ?? {}) }),
+    JSON.stringify({ ...DEFAULT_SETTINGS, ...sanitiseSettings(settings) }),
     now,
   )
   db.prepare('INSERT INTO members (id, couple_id, role, name, token, created_at) VALUES (?, ?, ?, ?, ?, ?)').run(
