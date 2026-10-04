@@ -1,5 +1,5 @@
 import { addDays } from './dates'
-import type { DayLog, Flow, Mucus } from './types'
+import type { DayLog, Flow } from './types'
 
 function rng(seed: number) {
   let s = seed >>> 0
@@ -17,7 +17,7 @@ interface CycleSpec {
 
 /**
  * Deterministic demo history: four completed cycles plus the current one,
- * with realistic biphasic temperatures and a mucus build-up around ovulation.
+ * with periods, LH tests and a sprinkling of intimate moments.
  * `currentDay` is which cycle day "today" falls on.
  */
 export function buildDemoLogs(today: string, currentDay = 11): DayLog[] {
@@ -41,31 +41,10 @@ export function buildDemoLogs(today: string, currentDay = 11): DayLog[] {
         const flows: Flow[] = ['medium', 'heavy', 'medium', 'light', 'spotting']
         log.flow = flows[Math.min(d - 1, flows.length - 1)]
       }
-      const baseline = 36.35 + (rand() - 0.5) * 0.12
-      const high = d > spec.ovulation
-      let temp = high ? baseline + 0.38 + (d - spec.ovulation) * 0.01 : baseline
-      if (high && d === spec.ovulation + 1) temp = baseline + 0.24
-      if (d === spec.length && d > spec.ovulation + 10) temp -= 0.2
-      if (rand() < 0.08) {
-        log.tempDisturbed = true
-        temp += 0.25
-      }
-      if (rand() > 0.06) log.temp = Math.round(temp * 20) / 20
-      if (d > spec.periodDays) {
-        const rel = d - spec.ovulation
-        let mucus: Mucus = 'dry'
-        if (rel >= -6 && rel <= -4) mucus = 'sticky'
-        else if (rel === -3) mucus = 'creamy'
-        else if (rel >= -2 && rel <= -1) mucus = 'watery'
-        else if (rel === 0) mucus = 'eggwhite'
-        else if (rel === 1) mucus = 'creamy'
-        else if (rel === 2) mucus = 'sticky'
-        log.mucus = mucus
-      }
       if (d === spec.ovulation - 1) log.lh = 'positive'
       if (d === spec.ovulation - 4) log.lh = 'negative'
-      if (rand() < 0.18) log.sex = d <= 5 || d > spec.ovulation + 4 ? 'unprotected' : 'protected'
-      logs.push(log)
+      if (rand() < 0.18) log.sex = d <= 5 || d > spec.ovulation + 7 ? 'unprotected' : 'protected'
+      if (log.flow || log.lh || log.sex) logs.push(log)
     }
   }
 

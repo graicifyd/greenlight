@@ -137,7 +137,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       join: (code, name) => signIn(api.join(code, name)),
       saveLog: async (partial) => {
         const log: DayLog = { ...partial, updatedAt: Date.now() }
-        const isEmpty = !log.flow && log.temp == null && !log.mucus && !log.lh && !log.sex && !log.note?.trim()
+        const isEmpty = !log.flow && !log.lh && !log.sex && !log.note?.trim()
         try {
           if (isEmpty) {
             const cur = stateRef.current
